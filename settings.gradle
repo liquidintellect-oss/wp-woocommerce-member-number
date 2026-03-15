@@ -1,0 +1,12 @@
+pluginManagement {
+    plugins {
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'wp-woocommerce-member-number'

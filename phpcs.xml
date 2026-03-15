@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<ruleset name="WC Member Number">
+    <description>WordPress Coding Standards for WooCommerce Member Number</description>
+
+    <!-- Files to check -->
+    <file>wp-woocommerce-member-number.php</file>
+    <file>includes/</file>
+
+    <!-- Only check PHP files -->
+    <arg name="extensions" value="php"/>
+
+    <!-- Show progress and use colors -->
+    <arg value="ps"/>
+    <arg name="colors"/>
+
+    <!-- WordPress ruleset -->
+    <rule ref="WordPress"/>
+
+    <!-- Plugin requires PHP 7.4+ -->
+    <config name="testVersion" value="7.4-"/>
+
+    <!-- Text domain for i18n checks -->
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="wmn"/>
+            </property>
+        </properties>
+    </rule>
+</ruleset>

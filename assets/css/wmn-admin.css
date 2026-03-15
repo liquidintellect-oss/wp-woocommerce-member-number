@@ -1,0 +1,62 @@
+/* ── WMN Admin Styles ─────────────────────────────────────────────────────── */
+
+/* Badges */
+.wmn-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	line-height: 1.8;
+}
+
+/* Status badges */
+.wmn-badge-active    { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.wmn-badge-suspended { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+.wmn-badge-revoked   { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+/* Type badges */
+.wmn-badge-auto   { background: #e9ecef; color: #495057; border: 1px solid #ced4da; }
+.wmn-badge-chosen { background: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+
+/* Format preview */
+.wmn-format-preview {
+	display: inline-block;
+	font-size: 15px;
+	padding: 4px 10px;
+	background: #f0f0f0;
+	border: 1px solid #ccc;
+	border-radius: 3px;
+	min-width: 140px;
+}
+
+/* Manual assign form */
+.wmn-manual-assign-form {
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	padding: 16px 20px;
+	margin-bottom: 16px;
+	max-width: 600px;
+}
+.wmn-manual-assign-form h2 { margin-top: 0; }
+
+/* Product list trigger badge */
+.wmn-product-trigger-badge {
+	display: inline-block;
+	padding: 1px 6px;
+	background: #cce5ff;
+	color: #004085;
+	border: 1px solid #b8daff;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+/* My Account */
+.wmn-my-account-number {
+	font-size: 1.1em;
+	padding: 10px 0;
+}

@@ -1,0 +1,58 @@
+plugins {
+   id 'distribution'
+}
+import org.apache.tools.ant.filters.ReplaceTokens
+
+def branchName = System.getenv('CIRCLE_BRANCH')
+    ?: 'git rev-parse --abbrev-ref HEAD'.execute().text.trim()
+
+def issueSuffix = ''
+if (branchName && branchName != 'main') {
+    def m = (branchName =~ /(?:^|\/)(gh-\d+)/)
+    if (m) issueSuffix = "-${m[0][1]}"
+}
+
+version = "1.0.0.${buildNumber}${issueSuffix}"
+
+distributions {
+    wpWoocommerceMemberNumberPlugin {
+        contents {
+            distributionBaseName = 'wp-woocommerce-member-number'
+            from(projectDir) {
+                exclude '**/*.gradle'
+                exclude '.gradle'
+                exclude 'gradle*'
+                exclude 'build'
+                exclude '.circleci'
+                exclude '.claude'
+                exclude '.idea'
+                exclude '.gitignore'
+                exclude 'vendor'
+                exclude 'composer.json'
+                exclude 'composer.lock'
+                exclude 'wp-woocommerce-member-number.php'
+            } into "/${project.name}"
+            from(projectDir) {
+                include 'wp-woocommerce-member-number.php'
+                filter(ReplaceTokens, tokens: [projectVersion: project.version.toString()])
+            } into "/${project.name}"
+        }
+    }
+}
+
+tasks.register('composerInstall', Exec) {
+    commandLine 'composer', 'install', '--no-interaction', '--prefer-dist', '--no-progress'
+}
+
+tasks.register('phpcs', Exec) {
+    dependsOn composerInstall
+    commandLine 'vendor/bin/phpcs'
+}
+
+tasks.named('wrapper') {
+    gradleVersion = '9.4.0'
+}
+
+tasks.named('check') {
+    dependsOn phpcs
+}
