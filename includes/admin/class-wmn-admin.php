@@ -16,7 +16,7 @@ class WMN_Admin {
 	 * Constructor — registers admin hooks.
 	 */
 	public function __construct() {
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ), 20 );
 		add_action( 'wp_ajax_wmn_format_preview', array( $this, 'ajax_format_preview' ) );
 	}
 
@@ -32,7 +32,7 @@ class WMN_Admin {
 		wp_enqueue_style(
 			'wmn-admin',
 			WMN_PLUGIN_URL . 'assets/css/wmn-admin.css',
-			array(),
+			array( 'woocommerce_admin_styles' ),
 			WMN_VERSION
 		);
 
