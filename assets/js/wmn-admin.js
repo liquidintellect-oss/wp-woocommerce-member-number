@@ -41,6 +41,84 @@
 		updatePreview
 	);
 
+	// ── Customer search select2 ──────────────────────────────────────────────
+
+	$( function () {
+		if ( typeof $.fn.selectWoo === 'undefined' ) return;
+
+		$( '.wmn-customer-search' ).each( function () {
+			var $el = $( this );
+			$el.selectWoo( {
+				allowClear:         true,
+				placeholder:        $el.data( 'placeholder' ) || '',
+				minimumInputLength: 3,
+				dropdownParent:     $( 'body' ),
+				escapeMarkup:       function ( m ) { return m; },
+				ajax: {
+					url:      wmnAdmin.ajaxUrl,
+					dataType: 'json',
+					delay:    250,
+					data: function ( params ) {
+						return {
+							term:     params.term,
+							action:   'woocommerce_json_search_customers',
+							security: wmnAdmin.searchCustomersNonce,
+						};
+					},
+					processResults: function ( data ) {
+						var terms = [];
+						if ( data ) {
+							$.each( data, function ( id, text ) {
+								terms.push( { id: id, text: text } );
+							} );
+						}
+						return { results: terms };
+					},
+					cache: true,
+				},
+			} );
+		} );
+	} );
+
+	// ── Order search select2 ─────────────────────────────────────────────────
+
+	$( function () {
+		if ( typeof $.fn.selectWoo === 'undefined' ) return;
+
+		$( '.wmn-order-search' ).each( function () {
+			var $el = $( this );
+			$el.selectWoo( {
+				allowClear:         true,
+				placeholder:        $el.data( 'placeholder' ) || '',
+				minimumInputLength: 1,
+				dropdownParent:     $( 'body' ),
+				escapeMarkup:       function ( m ) { return m; },
+				ajax: {
+					url:      wmnAdmin.ajaxUrl,
+					dataType: 'json',
+					delay:    250,
+					data: function ( params ) {
+						return {
+							term:   params.term,
+							action: 'wmn_search_orders',
+							nonce:  wmnAdmin.nonce,
+						};
+					},
+					processResults: function ( data ) {
+						var terms = [];
+						if ( data ) {
+							$.each( data, function ( id, text ) {
+								terms.push( { id: id, text: text } );
+							} );
+						}
+						return { results: terms };
+					},
+					cache: true,
+				},
+			} );
+		} );
+	} );
+
 	// ── Product search select2 ────────────────────────────────────────────────
 
 	$( function () {

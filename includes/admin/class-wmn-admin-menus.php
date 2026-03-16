@@ -137,15 +137,24 @@ class WMN_Admin_Menus {
 					<tr>
 						<th><label for="wmn_user_id"><?php esc_html_e( 'User', 'wmn' ); ?></label></th>
 						<td>
-							<input type="text" name="wmn_user_search" id="wmn_user_search"
-								class="wc-customer-search" data-placeholder="<?php esc_attr_e( 'Search for a customer…', 'wmn' ); ?>"
-								data-allow-clear="true" style="width:300px" />
-							<input type="hidden" name="wmn_user_id" id="wmn_user_id" value="" />
+							<select name="wmn_user_id" id="wmn_user_id"
+								class="wmn-customer-search"
+								data-placeholder="<?php esc_attr_e( 'Search for a customer…', 'wmn' ); ?>"
+								data-allow_clear="true"
+								style="width:300px">
+							</select>
 						</td>
 					</tr>
 					<tr>
-						<th><label for="wmn_order_id"><?php esc_html_e( 'Order ID', 'wmn' ); ?></label></th>
-						<td><input type="number" name="wmn_order_id" id="wmn_order_id" class="small-text" min="1" /></td>
+						<th><label for="wmn_order_id"><?php esc_html_e( 'Order (optional)', 'wmn' ); ?></label></th>
+						<td>
+							<select name="wmn_order_id" id="wmn_order_id"
+								class="wmn-order-search"
+								data-placeholder="<?php esc_attr_e( 'Search for an order…', 'wmn' ); ?>"
+								data-allow_clear="true"
+								style="width:300px">
+							</select>
+						</td>
 					</tr>
 					<tr>
 						<th>
@@ -315,14 +324,13 @@ class WMN_Admin_Menus {
 		$order_id = absint( $_POST['wmn_order_id'] ?? 0 );
 		$number   = sanitize_text_field( wp_unslash( $_POST['wmn_manual_number'] ?? '' ) );
 
-		if ( ! $order_id ) {
-			return;
-		}
+		$formatter       = wmn_get_formatter();
+		$assignment_type = 'manual';
 
 		if ( '' === $number ) {
 			// Auto-generate.
-			$formatter = wmn_get_formatter();
-			$sequence  = (int) get_option( 'wmn_last_sequence', 0 );
+			$assignment_type = 'auto';
+			$sequence        = (int) get_option( 'wmn_last_sequence', 0 );
 			do {
 				++$sequence;
 				$number = $formatter->generate( $sequence );
@@ -337,6 +345,12 @@ class WMN_Admin_Menus {
 			} while ( $exists );
 			update_option( 'wmn_last_sequence', $sequence, false );
 		} else {
+			// Format the number: if purely numeric treat as a sequence value so it
+			// gets prefix and zero-padding; otherwise use the entered value as-is.
+			if ( ctype_digit( $number ) ) {
+				$number = $formatter->generate( (int) $number );
+			}
+
 			// Validate uniqueness.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$exists = $wpdb->get_var(
@@ -371,7 +385,7 @@ class WMN_Admin_Menus {
 				'user_id'         => ( ! empty( $user_id ) ? $user_id : null ),
 				'order_id'        => $order_id,
 				'status'          => 'active',
-				'assignment_type' => 'auto',
+				'assignment_type' => $assignment_type,
 			),
 			array( '%s', '%d', '%d', '%s', '%s' )
 		);

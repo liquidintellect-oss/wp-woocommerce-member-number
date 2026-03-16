@@ -16,8 +16,9 @@ class WMN_Admin {
 	 * Constructor — registers admin hooks.
 	 */
 	public function __construct() {
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ), 20 );
 		add_action( 'wp_ajax_wmn_format_preview', array( $this, 'ajax_format_preview' ) );
+		add_action( 'wp_ajax_wmn_search_orders', array( $this, 'ajax_search_orders' ) );
 	}
 
 	/**
@@ -32,7 +33,7 @@ class WMN_Admin {
 		wp_enqueue_style(
 			'wmn-admin',
 			WMN_PLUGIN_URL . 'assets/css/wmn-admin.css',
-			array(),
+			array( 'woocommerce_admin_styles' ),
 			WMN_VERSION
 		);
 
@@ -54,14 +55,71 @@ class WMN_Admin {
 			'wmn-admin',
 			'wmnAdmin',
 			array(
-				'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
-				'nonce'          => wp_create_nonce( 'wmn_admin' ),
-				'label'          => wmn_get_label(),
-				'labelPlural'    => wmn_get_label( true ),
-				'confirmSuspend' => __( 'Suspend selected numbers?', 'wmn' ),
-				'confirmRevoke'  => __( 'Permanently revoke selected numbers? This cannot be undone.', 'wmn' ),
+				'ajaxUrl'              => admin_url( 'admin-ajax.php' ),
+				'nonce'                => wp_create_nonce( 'wmn_admin' ),
+				'searchCustomersNonce' => wp_create_nonce( 'search-customers' ),
+				'label'                => wmn_get_label(),
+				'labelPlural'          => wmn_get_label( true ),
+				'confirmSuspend'       => __( 'Suspend selected numbers?', 'wmn' ),
+				'confirmRevoke'        => __( 'Permanently revoke selected numbers? This cannot be undone.', 'wmn' ),
 			)
 		);
+	}
+
+	/**
+	 * Returns matching orders for the manual-assign order search field.
+	 *
+	 * @return void
+	 */
+	public function ajax_search_orders(): void {
+		check_ajax_referer( 'wmn_admin', 'nonce' );
+
+		// phpcs:ignore WordPress.WP.Capabilities.Unknown
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json( array() );
+		}
+
+		$term = sanitize_text_field( wp_unslash( $_GET['term'] ?? '' ) );
+		if ( '' === $term ) {
+			wp_send_json( array() );
+		}
+
+		$results = array();
+
+		// Numeric input: try exact order ID first.
+		if ( ctype_digit( $term ) ) {
+			$order = wc_get_order( absint( $term ) );
+			if ( $order ) {
+				$name                        = trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() );
+				$results[ $order->get_id() ] = sprintf(
+					/* translators: 1: order number, 2: billing name */
+					__( '#%1$s — %2$s', 'wmn' ),
+					$order->get_order_number(),
+					$name ? $name : __( 'Guest', 'wmn' )
+				);
+			}
+		}
+
+		// Text or numeric: also search by billing name / email.
+		if ( empty( $results ) ) {
+			$orders = wc_get_orders(
+				array(
+					'limit'  => 20,
+					'search' => $term,
+				)
+			);
+			foreach ( $orders as $order ) {
+				$name                        = trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() );
+				$results[ $order->get_id() ] = sprintf(
+					/* translators: 1: order number, 2: billing name */
+					__( '#%1$s — %2$s', 'wmn' ),
+					$order->get_order_number(),
+					$name ? $name : __( 'Guest', 'wmn' )
+				);
+			}
+		}
+
+		wp_send_json( $results );
 	}
 
 	/**

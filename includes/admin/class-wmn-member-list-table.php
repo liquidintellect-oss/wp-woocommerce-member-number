@@ -140,10 +140,14 @@ class WMN_Member_List_Table extends WP_List_Table {
 	 * @return string
 	 */
 	protected function column_assignment_type( array $item ): string {
-		if ( 'chosen' === $item['assignment_type'] ) {
-			return '<span class="wmn-badge wmn-badge-chosen">' . esc_html__( 'Chosen', 'wmn' ) . '</span>';
+		switch ( $item['assignment_type'] ) {
+			case 'chosen':
+				return '<span class="wmn-badge wmn-badge-chosen">' . esc_html__( 'Chosen', 'wmn' ) . '</span>';
+			case 'manual':
+				return '<span class="wmn-badge wmn-badge-manual">' . esc_html__( 'Manual', 'wmn' ) . '</span>';
+			default:
+				return '<span class="wmn-badge wmn-badge-auto">' . esc_html__( 'Auto', 'wmn' ) . '</span>';
 		}
-		return '<span class="wmn-badge wmn-badge-auto">' . esc_html__( 'Auto', 'wmn' ) . '</span>';
 	}
 
 	/**

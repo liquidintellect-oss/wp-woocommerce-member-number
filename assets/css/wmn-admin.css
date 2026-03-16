@@ -20,6 +20,7 @@
 /* Type badges */
 .wmn-badge-auto   { background: #e9ecef; color: #495057; border: 1px solid #ced4da; }
 .wmn-badge-chosen { background: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+.wmn-badge-manual { background: #e2d9f3; color: #4a235a; border: 1px solid #c5b3e6; }
 
 /* Format preview */
 .wmn-format-preview {
