@@ -41,6 +41,48 @@
 		updatePreview
 	);
 
+	// ── Customer search select2 ──────────────────────────────────────────────
+
+	$( function () {
+		if ( typeof $.fn.selectWoo === 'undefined' ) return;
+
+		$( 'select.wc-customer-search' ).filter( ':not(.enhanced)' ).each( function () {
+			var $el     = $( this );
+			var wcParams = ( typeof wc_enhanced_select_params !== 'undefined' ) ? wc_enhanced_select_params : {};
+			var ajaxUrl = wcParams.ajax_url || wmnAdmin.ajaxUrl;
+			var nonce   = wcParams.search_customers_nonce || '';
+
+			$el.selectWoo( {
+				allowClear:         $el.data( 'allow_clear' ) || false,
+				placeholder:        $el.data( 'placeholder' ) || '',
+				minimumInputLength: 3,
+				escapeMarkup:       function ( m ) { return m; },
+				ajax: {
+					url:      ajaxUrl,
+					dataType: 'json',
+					delay:    250,
+					data: function ( params ) {
+						return {
+							term:     params.term,
+							action:   'woocommerce_json_search_customers',
+							security: nonce,
+						};
+					},
+					processResults: function ( data ) {
+						var terms = [];
+						if ( data ) {
+							$.each( data, function ( id, text ) {
+								terms.push( { id: id, text: text } );
+							} );
+						}
+						return { results: terms };
+					},
+					cache: true,
+				},
+			} ).addClass( 'enhanced' );
+		} );
+	} );
+
 	// ── Product search select2 ────────────────────────────────────────────────
 
 	$( function () {

@@ -45,7 +45,7 @@ class WMN_Admin {
 		wp_enqueue_script(
 			'wmn-admin',
 			WMN_PLUGIN_URL . 'assets/js/wmn-admin.js',
-			array( 'jquery', 'selectWoo' ),
+			array( 'jquery', 'selectWoo', 'wc-enhanced-select' ),
 			WMN_VERSION,
 			true
 		);
