@@ -56,6 +56,7 @@
 				allowClear:         $el.data( 'allow_clear' ) || false,
 				placeholder:        $el.data( 'placeholder' ) || '',
 				minimumInputLength: 3,
+				dropdownParent:     $( 'body' ),
 				escapeMarkup:       function ( m ) { return m; },
 				ajax: {
 					url:      ajaxUrl,
