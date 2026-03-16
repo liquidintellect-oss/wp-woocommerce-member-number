@@ -45,7 +45,7 @@ class WMN_Admin {
 		wp_enqueue_script(
 			'wmn-admin',
 			WMN_PLUGIN_URL . 'assets/js/wmn-admin.js',
-			array( 'jquery', 'selectWoo', 'wc-enhanced-select' ),
+			array( 'jquery', 'selectWoo' ),
 			WMN_VERSION,
 			true
 		);
@@ -54,12 +54,13 @@ class WMN_Admin {
 			'wmn-admin',
 			'wmnAdmin',
 			array(
-				'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
-				'nonce'          => wp_create_nonce( 'wmn_admin' ),
-				'label'          => wmn_get_label(),
-				'labelPlural'    => wmn_get_label( true ),
-				'confirmSuspend' => __( 'Suspend selected numbers?', 'wmn' ),
-				'confirmRevoke'  => __( 'Permanently revoke selected numbers? This cannot be undone.', 'wmn' ),
+				'ajaxUrl'              => admin_url( 'admin-ajax.php' ),
+				'nonce'                => wp_create_nonce( 'wmn_admin' ),
+				'searchCustomersNonce' => wp_create_nonce( 'search-customers' ),
+				'label'                => wmn_get_label(),
+				'labelPlural'          => wmn_get_label( true ),
+				'confirmSuspend'       => __( 'Suspend selected numbers?', 'wmn' ),
+				'confirmRevoke'        => __( 'Permanently revoke selected numbers? This cannot be undone.', 'wmn' ),
 			)
 		);
 	}

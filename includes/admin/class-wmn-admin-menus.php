@@ -138,7 +138,7 @@ class WMN_Admin_Menus {
 						<th><label for="wmn_user_id"><?php esc_html_e( 'User', 'wmn' ); ?></label></th>
 						<td>
 							<select name="wmn_user_id" id="wmn_user_id"
-								class="wc-customer-search"
+								class="wmn-customer-search"
 								data-placeholder="<?php esc_attr_e( 'Search for a customer…', 'wmn' ); ?>"
 								data-allow_clear="true"
 								style="width:300px">
