@@ -137,10 +137,12 @@ class WMN_Admin_Menus {
 					<tr>
 						<th><label for="wmn_user_id"><?php esc_html_e( 'User', 'wmn' ); ?></label></th>
 						<td>
-							<input type="text" name="wmn_user_search" id="wmn_user_search"
-								class="wc-customer-search" data-placeholder="<?php esc_attr_e( 'Search for a customer…', 'wmn' ); ?>"
-								data-allow-clear="true" style="width:300px" />
-							<input type="hidden" name="wmn_user_id" id="wmn_user_id" value="" />
+							<select name="wmn_user_id" id="wmn_user_id"
+								class="wc-customer-search"
+								data-placeholder="<?php esc_attr_e( 'Search for a customer…', 'wmn' ); ?>"
+								data-allow_clear="true"
+								style="width:300px">
+							</select>
 						</td>
 					</tr>
 					<tr>
