@@ -146,8 +146,15 @@ class WMN_Admin_Menus {
 						</td>
 					</tr>
 					<tr>
-						<th><label for="wmn_order_id"><?php esc_html_e( 'Order ID', 'wmn' ); ?></label></th>
-						<td><input type="number" name="wmn_order_id" id="wmn_order_id" class="small-text" min="1" /></td>
+						<th><label for="wmn_order_id"><?php esc_html_e( 'Order (optional)', 'wmn' ); ?></label></th>
+						<td>
+							<select name="wmn_order_id" id="wmn_order_id"
+								class="wmn-order-search"
+								data-placeholder="<?php esc_attr_e( 'Search for an order…', 'wmn' ); ?>"
+								data-allow_clear="true"
+								style="width:300px">
+							</select>
+						</td>
 					</tr>
 					<tr>
 						<th>
@@ -316,10 +323,6 @@ class WMN_Admin_Menus {
 		$user_id  = absint( $_POST['wmn_user_id'] ?? 0 );
 		$order_id = absint( $_POST['wmn_order_id'] ?? 0 );
 		$number   = sanitize_text_field( wp_unslash( $_POST['wmn_manual_number'] ?? '' ) );
-
-		if ( ! $order_id ) {
-			return;
-		}
 
 		$formatter       = wmn_get_formatter();
 		$assignment_type = 'manual';
