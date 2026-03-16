@@ -321,10 +321,13 @@ class WMN_Admin_Menus {
 			return;
 		}
 
+		$formatter       = wmn_get_formatter();
+		$assignment_type = 'manual';
+
 		if ( '' === $number ) {
 			// Auto-generate.
-			$formatter = wmn_get_formatter();
-			$sequence  = (int) get_option( 'wmn_last_sequence', 0 );
+			$assignment_type = 'auto';
+			$sequence        = (int) get_option( 'wmn_last_sequence', 0 );
 			do {
 				++$sequence;
 				$number = $formatter->generate( $sequence );
@@ -339,6 +342,12 @@ class WMN_Admin_Menus {
 			} while ( $exists );
 			update_option( 'wmn_last_sequence', $sequence, false );
 		} else {
+			// Format the number: if purely numeric treat as a sequence value so it
+			// gets prefix and zero-padding; otherwise use the entered value as-is.
+			if ( ctype_digit( $number ) ) {
+				$number = $formatter->generate( (int) $number );
+			}
+
 			// Validate uniqueness.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$exists = $wpdb->get_var(
@@ -373,7 +382,7 @@ class WMN_Admin_Menus {
 				'user_id'         => ( ! empty( $user_id ) ? $user_id : null ),
 				'order_id'        => $order_id,
 				'status'          => 'active',
-				'assignment_type' => 'auto',
+				'assignment_type' => $assignment_type,
 			),
 			array( '%s', '%d', '%d', '%s', '%s' )
 		);
