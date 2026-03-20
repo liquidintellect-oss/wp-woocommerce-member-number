@@ -35,6 +35,13 @@
 	margin-right: 8px;
 }
 
+.wmn-format-hint {
+	display: block;
+	margin-top: 4px;
+	font-size: 0.85em;
+	color: #555;
+}
+
 .wmn-check-result {
 	margin-top: 10px;
 	font-weight: 500;

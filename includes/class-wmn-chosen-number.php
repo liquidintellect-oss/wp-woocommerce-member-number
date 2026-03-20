@@ -54,7 +54,18 @@ class WMN_Chosen_Number {
 		$label     = wmn_get_label();
 		$currency  = get_woocommerce_currency_symbol();
 		$nonce     = wp_create_nonce( 'wmn_check_number' );
-		$example   = wmn_get_formatter()->generate( (int) get_option( 'wmn_number_min_value', 1 ) );
+		$formatter = wmn_get_formatter();
+		$min_value = (int) get_option( 'wmn_number_min_value', 1 );
+
+		// Show a plain numeric placeholder so customers know they only need to enter digits.
+		// The formatted example is shown separately as a hint below the input.
+		if ( false !== strpos( $formatter->get_template(), '{SEQ}' ) ) {
+			$placeholder = (string) $min_value;
+			$example     = $formatter->generate( $min_value );
+		} else {
+			$placeholder = $formatter->generate( $min_value );
+			$example     = '';
+		}
 
 		?>
 		<div id="wmn-chosen-number-wrap" class="wmn-chosen-number-wrap">
@@ -80,9 +91,22 @@ class WMN_Chosen_Number {
 						id="wmn_chosen_input"
 						name="wmn_chosen_input"
 						class="input-text"
-						placeholder="<?php echo esc_attr( $example ); ?>"
+						placeholder="<?php echo esc_attr( $placeholder ); ?>"
 						autocomplete="off"
+						inputmode="numeric"
 					/>
+					<?php if ( '' !== $example ) : ?>
+					<span class="wmn-format-hint">
+						<?php
+						printf(
+							/* translators: 1: member number label, 2: example formatted number */
+							esc_html__( 'Enter digits only. Your %1$s will be formatted as: %2$s', 'wmn' ),
+							esc_html( $label ),
+							'<strong>' . esc_html( $example ) . '</strong>'
+						);
+						?>
+					</span>
+					<?php endif; ?>
 					<button type="button" id="wmn-check-btn" class="button alt">
 						<?php esc_html_e( 'Check Availability', 'wmn' ); ?>
 					</button>
