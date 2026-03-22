@@ -110,10 +110,17 @@ class WMN_Member_Number_Manager {
 			return;
 		}
 
-		// Idempotency — user already has a number?
-		$user_id = $order->get_user_id();
-		if ( $user_id > 0 && get_user_meta( $user_id, '_wmn_member_number', true ) ) {
-			return;
+		// Idempotency — user already has an active number?
+		// Suspended/revoked records are ignored so the user can receive a new assignment.
+		$user_id         = $order->get_user_id();
+		$existing_record = $user_id > 0 ? WMN_Member_Number::get_by_user( $user_id ) : null;
+		if ( $existing_record && $existing_record->is_active() ) {
+			// Allow the user to replace their active number with a customer-chosen one.
+			$chosen_feature_on = 'yes' === get_option( 'wmn_allow_chosen_number', 'no' );
+			$has_chosen        = (string) $order->get_meta( '_wmn_chosen_number' );
+			if ( ! $chosen_feature_on || ! $has_chosen ) {
+				return;
+			}
 		}
 
 		// Branch: chosen or auto.
@@ -238,18 +245,38 @@ class WMN_Member_Number_Manager {
 			return;
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		$inserted = $wpdb->insert(
-			$wpdb->prefix . 'wmn_member_numbers',
-			array(
-				'member_number'   => $chosen,
-				'user_id'         => ( ! empty( $order->get_user_id() ) ? $order->get_user_id() : null ),
-				'order_id'        => $order->get_id(),
-				'status'          => 'active',
-				'assignment_type' => 'chosen',
-			),
-			array( '%s', '%d', '%d', '%s', '%s' )
-		);
+		$user_id         = $order->get_user_id() ? $order->get_user_id() : null;
+		$existing_record = $user_id ? WMN_Member_Number::get_by_user( $user_id ) : null;
+
+		if ( $existing_record ) {
+			// User already has a record — replace it with the new chosen number.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$inserted = $wpdb->update(
+				$wpdb->prefix . 'wmn_member_numbers',
+				array(
+					'member_number'   => $chosen,
+					'order_id'        => $order->get_id(),
+					'status'          => 'active',
+					'assignment_type' => 'chosen',
+				),
+				array( 'id' => $existing_record->id ),
+				array( '%s', '%d', '%s', '%s' ),
+				array( '%d' )
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$inserted = $wpdb->insert(
+				$wpdb->prefix . 'wmn_member_numbers',
+				array(
+					'member_number'   => $chosen,
+					'user_id'         => $user_id,
+					'order_id'        => $order->get_id(),
+					'status'          => 'active',
+					'assignment_type' => 'chosen',
+				),
+				array( '%s', '%d', '%d', '%s', '%s' )
+			);
+		}
 
 		// Clean up reservation regardless of outcome.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching

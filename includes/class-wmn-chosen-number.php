@@ -56,6 +56,15 @@ class WMN_Chosen_Number {
 		$nonce     = wp_create_nonce( 'wmn_check_number' );
 		$formatter = wmn_get_formatter();
 		$min_value = (int) get_option( 'wmn_number_min_value', 1 );
+		// Only show the "replacing" notice when the user's existing number is active.
+		// Suspended or revoked numbers are treated as if no number exists.
+		$existing_number = '';
+		if ( is_user_logged_in() ) {
+			$existing_record = WMN_Member_Number::get_by_user( get_current_user_id() );
+			if ( $existing_record && $existing_record->is_active() ) {
+				$existing_number = $existing_record->member_number;
+			}
+		}
 
 		// Show a plain numeric placeholder so customers know they only need to enter digits.
 		// The formatted example is shown separately as a hint below the input.
@@ -69,6 +78,18 @@ class WMN_Chosen_Number {
 
 		?>
 		<div id="wmn-chosen-number-wrap" class="wmn-chosen-number-wrap">
+			<?php if ( $existing_number ) : ?>
+			<p class="wmn-existing-number-notice">
+				<?php
+				printf(
+					/* translators: 1: member number label, 2: existing number */
+					esc_html__( 'You already have %1$s %2$s. Choose a new one below to replace it.', 'wmn' ),
+					esc_html( $label ),
+					'<strong>' . esc_html( $existing_number ) . '</strong>'
+				);
+				?>
+			</p>
+			<?php endif; ?>
 			<h3 class="wmn-chosen-toggle">
 				<span class="wmn-toggle-arrow">&#9654;</span>
 				<?php
@@ -118,14 +139,26 @@ class WMN_Chosen_Number {
 		<script>
 		window.wmnData =
 		<?php
+		$replacing_notice = '';
+		if ( $existing_number ) {
+			$replacing_notice = sprintf(
+				/* translators: 1: member number label, 2: existing number */
+				__( 'Your existing %1$s %2$s will be replaced.', 'wmn' ),
+				$label,
+				$existing_number
+			);
+		}
+
 		echo wp_json_encode(
 			array(
-				'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
-				'nonce'       => $nonce,
-				'feeRaw'      => (float) get_option( 'wmn_chosen_number_fee', 25.00 ),
-				'feeCurrency' => $currency,
-				'label'       => $label,
-				'feeLabel'    => $fee_label,
+				'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
+				'nonce'           => $nonce,
+				'feeRaw'          => (float) get_option( 'wmn_chosen_number_fee', 25.00 ),
+				'feeCurrency'     => $currency,
+				'label'           => $label,
+				'feeLabel'        => $fee_label,
+				'existingNumber'  => $existing_number,
+				'replacingNotice' => $replacing_notice,
 			)
 		);
 		?>

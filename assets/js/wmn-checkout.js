@@ -76,7 +76,11 @@
 		.done( function ( response ) {
 			if ( response.success ) {
 				$hidden.val( response.data.number );
-				setResult( 'success', response.data.message );
+				var msg = response.data.message;
+				if ( wmnData.replacingNotice ) {
+					msg += ' ' + wmnData.replacingNotice;
+				}
+				setResult( 'success', msg );
 				$( document.body ).trigger( 'update_checkout' );
 			} else {
 				$hidden.val( '' );
