@@ -34,9 +34,10 @@ class WMN_Admin_User_Profile {
 			return;
 		}
 
-		$record = WMN_Member_Number::get_by_user( $user->ID );
-		$number = $record ? $record->member_number : '';
-		$nonce  = wp_create_nonce( 'wmn_user_profile_' . $user->ID );
+		$record  = WMN_Member_Number::get_by_user( $user->ID );
+		$number  = $record ? $record->member_number : '';
+		$nonce   = wp_create_nonce( 'wmn_user_profile_' . $user->ID );
+		$entries = $record ? WMN_Member_Number_Audit::get_by_record_id( $record->id ) : array();
 		?>
 		<h2><?php echo esc_html( wmn_get_label() ); ?></h2>
 		<table class="form-table" id="wmn-user-profile-section">
@@ -83,7 +84,72 @@ class WMN_Admin_User_Profile {
 					<?php endif; ?>
 				</td>
 			</tr>
+			<?php if ( $record ) : ?>
+			<tr>
+				<th><label for="wmn_member_notes_display"><?php esc_html_e( 'Admin Notes', 'wmn' ); ?></label></th>
+				<td>
+					<p id="wmn_member_notes_display" class="description">
+						<?php echo $record->notes ? esc_html( $record->notes ) : '<em>' . esc_html__( 'None', 'wmn' ) . '</em>'; ?>
+					</p>
+					<?php
+					$edit_url = add_query_arg(
+						array(
+							'action' => 'edit_member',
+							'wmn_id' => $record->id,
+						),
+						admin_url( 'admin.php?page=wmn-members' )
+					);
+					?>
+					<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small">
+						<?php
+						printf(
+							/* translators: %s: label */
+							esc_html__( 'Edit %s Record', 'wmn' ),
+							esc_html( wmn_get_label() )
+						);
+						?>
+					</a>
+				</td>
+			</tr>
+			<?php endif; ?>
 		</table>
+
+		<?php if ( $entries ) : ?>
+		<h3><?php esc_html_e( 'Member Number Change History', 'wmn' ); ?></h3>
+		<table class="widefat striped" style="margin-bottom:2em;">
+			<thead>
+				<tr>
+					<th><?php esc_html_e( 'Date', 'wmn' ); ?></th>
+					<th><?php esc_html_e( 'Admin', 'wmn' ); ?></th>
+					<th><?php esc_html_e( 'Field', 'wmn' ); ?></th>
+					<th><?php esc_html_e( 'From', 'wmn' ); ?></th>
+					<th><?php esc_html_e( 'To', 'wmn' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $entries as $entry ) : ?>
+				<tr>
+					<td><?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $entry->changed_at ) ) ); ?></td>
+					<td>
+						<?php
+						if ( $entry->admin_user_id ) {
+							$admin = get_userdata( $entry->admin_user_id );
+							echo $admin
+								? '<a href="' . esc_url( get_edit_user_link( $admin->ID ) ) . '">' . esc_html( $admin->display_name ) . '</a>'
+								: esc_html( sprintf( '#%d', $entry->admin_user_id ) );
+						} else {
+							echo '<em>' . esc_html__( 'System', 'wmn' ) . '</em>';
+						}
+						?>
+					</td>
+					<td><?php echo esc_html( $entry->field_changed ); ?></td>
+					<td><?php echo esc_html( $entry->old_value ); ?></td>
+					<td><?php echo esc_html( $entry->new_value ); ?></td>
+				</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+		<?php endif; ?>
 		<?php
 	}
 
@@ -126,6 +192,7 @@ class WMN_Admin_User_Profile {
 					array( '%s' ),
 					array( '%d' )
 				);
+				WMN_Member_Number_Audit::log( $existing->id, 'member_number', $old_number, '' );
 			}
 			delete_user_meta( $user_id, '_wmn_member_number' );
 			delete_user_meta( $user_id, '_wmn_member_number_order_id' );
@@ -175,6 +242,7 @@ class WMN_Admin_User_Profile {
 				array( '%s', '%d' ),
 				array( '%d' )
 			);
+			WMN_Member_Number_Audit::log( $existing->id, 'member_number', $old_number, $new_number );
 		} else {
 			// Create a new record with no order.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -185,10 +253,14 @@ class WMN_Admin_User_Profile {
 					'user_id'         => $user_id,
 					'order_id'        => 0,
 					'status'          => 'active',
-					'assignment_type' => 'auto',
+					'assignment_type' => 'manual',
 				),
 				array( '%s', '%d', '%d', '%s', '%s' )
 			);
+			$new_id = (int) $wpdb->insert_id;
+			if ( $new_id ) {
+				WMN_Member_Number_Audit::log( $new_id, 'created', '', $new_number );
+			}
 		}
 
 		update_user_meta( $user_id, '_wmn_member_number', $new_number );

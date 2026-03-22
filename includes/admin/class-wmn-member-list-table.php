@@ -47,6 +47,7 @@ class WMN_Member_List_Table extends WP_List_Table {
 			'order'           => __( 'Order', 'wmn' ),
 			'status'          => __( 'Status', 'wmn' ),
 			'assigned_at'     => __( 'Assigned', 'wmn' ),
+			'notes'           => __( 'Notes', 'wmn' ),
 		);
 	}
 
@@ -97,15 +98,28 @@ class WMN_Member_List_Table extends WP_List_Table {
 	 * @return string
 	 */
 	protected function column_member_number( array $item ): string {
-		$nonce = wp_create_nonce( 'wmn_row_action' );
-		$base  = add_query_arg(
+		$nonce    = wp_create_nonce( 'wmn_row_action' );
+		$base     = add_query_arg(
 			array(
 				'wmn_nonce' => $nonce,
 				'wmn_id'    => $item['id'],
 			)
 		);
+		$edit_url = add_query_arg(
+			array(
+				'action' => 'edit_member',
+				'wmn_id' => absint( $item['id'] ),
+			),
+			admin_url( 'admin.php?page=wmn-members' )
+		);
 
-		$actions = array();
+		$actions = array(
+			'edit' => sprintf(
+				'<a href="%s">%s</a>',
+				esc_url( $edit_url ),
+				esc_html__( 'Edit', 'wmn' )
+			),
+		);
 
 		if ( 'active' === $item['status'] || 'revoked' === $item['status'] ) {
 			$actions['suspend'] = sprintf(
@@ -219,6 +233,24 @@ class WMN_Member_List_Table extends WP_List_Table {
 	 */
 	protected function column_assigned_at( array $item ): string {
 		return esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $item['assigned_at'] ) ) );
+	}
+
+	/**
+	 * Renders the notes column — truncates long notes with a title attribute for hover preview.
+	 *
+	 * @param array<string,mixed> $item The current row data.
+	 * @return string
+	 */
+	protected function column_notes( array $item ): string {
+		$notes = $item['notes'] ?? '';
+		if ( '' === $notes ) {
+			return '<span aria-hidden="true">—</span>';
+		}
+		$short = mb_strimwidth( $notes, 0, 60, '…' );
+		if ( $short === $notes ) {
+			return esc_html( $notes );
+		}
+		return '<span title="' . esc_attr( $notes ) . '">' . esc_html( $short ) . '</span>';
 	}
 
 	/**
