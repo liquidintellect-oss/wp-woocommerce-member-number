@@ -190,13 +190,26 @@ class WMN_Number_Formatter {
 	}
 
 	/**
-	 * Auto-prefix input if the template starts with {PREFIX} and the prefix is missing.
+	 * Normalize raw user input into a fully-formatted member number.
+	 *
+	 * Customers are only required to enter the numeric portion. This method
+	 * applies the prefix and zero-padding (number mask) automatically so that
+	 * downstream validation always receives a fully-formatted string.
 	 *
 	 * @param string $input Raw user input.
 	 * @return string
 	 */
 	public function normalize_input( string $input ): string {
 		$input = trim( $input );
+
+		// If the customer entered only digits, treat the value as the sequence
+		// number and generate the full formatted member number (prefix + padding).
+		if ( ctype_digit( $input ) && false !== strpos( $this->template, '{SEQ}' ) ) {
+			return $this->generate( (int) $input );
+		}
+
+		// Legacy fallback: auto-prefix if the template starts with {PREFIX} and
+		// the prefix is not already present.
 		if (
 			'' !== $this->prefix &&
 			str_starts_with( $this->template, '{PREFIX}' ) &&
@@ -204,6 +217,7 @@ class WMN_Number_Formatter {
 		) {
 			$input = $this->prefix . $input;
 		}
+
 		return $input;
 	}
 
