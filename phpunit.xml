@@ -16,4 +16,7 @@
             <directory>tests/Unit</directory>
         </testsuite>
     </testsuites>
+    <logging>
+        <junit outputFile="build/test-results/phpunit/results.xml"/>
+    </logging>
 </phpunit>
