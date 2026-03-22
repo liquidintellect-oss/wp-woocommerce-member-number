@@ -49,10 +49,16 @@ tasks.register('phpcs', Exec) {
     commandLine 'vendor/bin/phpcs'
 }
 
+tasks.register('phpunit', Exec) {
+    dependsOn composerInstall
+    commandLine 'vendor/bin/phpunit'
+}
+
 tasks.named('wrapper') {
     gradleVersion = '9.4.0'
 }
 
 tasks.named('check') {
     dependsOn phpcs
+    dependsOn phpunit
 }

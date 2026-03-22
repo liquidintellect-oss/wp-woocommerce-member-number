@@ -106,14 +106,14 @@ class WMN_Member_Number_Manager {
 		}
 
 		// Idempotency — already assigned for this order?
-		if ( WMN_Member_Number::get_by_order( $order_id ) ) {
+		if ( $this->get_record_for_order( $order_id ) ) {
 			return;
 		}
 
 		// Idempotency — user already has an active number?
 		// Suspended/revoked records are ignored so the user can receive a new assignment.
 		$user_id         = $order->get_user_id();
-		$existing_record = $user_id > 0 ? WMN_Member_Number::get_by_user( $user_id ) : null;
+		$existing_record = $user_id > 0 ? $this->get_record_for_user( $user_id ) : null;
 		if ( $existing_record && $existing_record->is_active() ) {
 			// Allow the user to replace their active number with a customer-chosen one.
 			$chosen_feature_on = 'yes' === get_option( 'wmn_allow_chosen_number', 'no' );
@@ -142,7 +142,7 @@ class WMN_Member_Number_Manager {
 	 * @param WC_Order $order The WooCommerce order object.
 	 * @return void
 	 */
-	private function assign_auto_number( WC_Order $order ): void {
+	protected function assign_auto_number( WC_Order $order ): void {
 		global $wpdb;
 
 		$formatter = wmn_get_formatter();
@@ -225,7 +225,7 @@ class WMN_Member_Number_Manager {
 	 * @param string   $chosen The number chosen by the customer.
 	 * @return void
 	 */
-	private function assign_chosen_number( WC_Order $order, string $chosen ): void {
+	protected function assign_chosen_number( WC_Order $order, string $chosen ): void {
 		global $wpdb;
 
 		$formatter  = wmn_get_formatter();
@@ -245,8 +245,9 @@ class WMN_Member_Number_Manager {
 			return;
 		}
 
-		$user_id         = $order->get_user_id() ? $order->get_user_id() : null;
-		$existing_record = $user_id ? WMN_Member_Number::get_by_user( $user_id ) : null;
+		$raw_uid         = $order->get_user_id();
+		$user_id         = $raw_uid ? $raw_uid : null;
+		$existing_record = $user_id ? $this->get_record_for_user( $user_id ) : null;
 
 		if ( $existing_record ) {
 			// User already has a record — replace it with the new chosen number.
@@ -360,7 +361,7 @@ class WMN_Member_Number_Manager {
 	 * @param string   $type   Assignment type: 'auto' or 'chosen'.
 	 * @return void
 	 */
-	private function persist_user_meta( WC_Order $order, string $number, string $type ): void {
+	protected function persist_user_meta( WC_Order $order, string $number, string $type ): void {
 		$user_id = $order->get_user_id();
 		if ( $user_id > 0 ) {
 			update_user_meta( $user_id, '_wmn_member_number', $number );
@@ -574,7 +575,7 @@ class WMN_Member_Number_Manager {
 	 * @param WC_Order $order The order to check.
 	 * @return bool
 	 */
-	private function order_contains_trigger_product( WC_Order $order ): bool {
+	protected function order_contains_trigger_product( WC_Order $order ): bool {
 		$trigger_ids = wmn_get_trigger_product_ids();
 		if ( empty( $trigger_ids ) ) {
 			return false;
@@ -593,6 +594,28 @@ class WMN_Member_Number_Manager {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Retrieve the member number record for a given order, if one exists.
+	 * Extracted as a protected method so tests can override it without touching the DB.
+	 *
+	 * @param int $order_id The order ID to look up.
+	 * @return WMN_Member_Number|null
+	 */
+	protected function get_record_for_order( int $order_id ): ?WMN_Member_Number {
+		return WMN_Member_Number::get_by_order( $order_id );
+	}
+
+	/**
+	 * Retrieve the member number record for a given user, if one exists.
+	 * Extracted as a protected method so tests can override it without touching the DB.
+	 *
+	 * @param int $user_id The user ID to look up.
+	 * @return WMN_Member_Number|null
+	 */
+	protected function get_record_for_user( int $user_id ): ?WMN_Member_Number {
+		return WMN_Member_Number::get_by_user( $user_id );
 	}
 
 	/**
