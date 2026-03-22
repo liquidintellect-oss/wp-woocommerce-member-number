@@ -34,7 +34,7 @@ jobs:
           command: 'chmod +x gradlew'
       - run:
           name: Gradle build
-          command: ./gradlew build -x distTar
+          command: ./gradlew build
       - save_cache:
           key: v1-gradle-{{ checksum "build.gradle" }}
           paths:

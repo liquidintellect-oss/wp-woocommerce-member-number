@@ -54,6 +54,12 @@ tasks.register('phpunit', Exec) {
     commandLine 'vendor/bin/phpunit'
 }
 
+// The distribution plugin registers a *DistTar task for every distribution.
+// Disable them all so only the ZIP is ever produced.
+tasks.withType(Tar).configureEach {
+    enabled = false
+}
+
 tasks.named('wrapper') {
     gradleVersion = '9.4.0'
 }
