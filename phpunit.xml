@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+    bootstrap="tests/bootstrap.php"
+    colors="true"
+    stopOnFailure="false"
+    convertDeprecationsToExceptions="false"
+>
+    <!-- Suppress PHP-level deprecation notices emitted by vendor code (WP_Mock on PHP 8.5). -->
+    <php>
+        <ini name="error_reporting" value="24575"/><!-- E_ALL ^ E_DEPRECATED -->
+    </php>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+    </testsuites>
+    <logging>
+        <junit outputFile="build/test-results/phpunit/results.xml"/>
+    </logging>
+</phpunit>
