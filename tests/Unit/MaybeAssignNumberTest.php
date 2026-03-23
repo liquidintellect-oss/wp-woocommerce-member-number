@@ -27,9 +27,9 @@ class TestableMaybeAssignManager extends WMN_Member_Number_Manager {
 	public ?WMN_Member_Number $stub_record_for_order = null;
 	public ?WMN_Member_Number $stub_record_for_user  = null;
 
-	public bool   $auto_assign_called   = false;
-	public bool   $chosen_assign_called = false;
-	public string $chosen_assign_arg    = '';
+	public bool $auto_assign_called   = false;
+	public bool $chosen_assign_called = false;
+	public string $chosen_assign_arg  = '';
 
 	protected function get_record_for_order( int $order_id ): ?WMN_Member_Number {
 		return $this->stub_record_for_order;
@@ -84,14 +84,14 @@ class MaybeAssignNumberTest extends TestCase {
 
 		WP_Mock::userFunction(
 			'wc_get_order',
-			[
-				'args'   => [ self::ORDER_ID ],
+			array(
+				'args'   => array( self::ORDER_ID ),
 				'return' => $this->order,
-			]
+			)
 		);
 
-		// apply_filters( 'wmn_should_assign_for_order', ... ) must return true.
-		WP_Mock::userFunction( 'apply_filters', [ 'return' => true ] );
+		// The wmn_should_assign_for_order filter must return true.
+		WP_Mock::userFunction( 'apply_filters', array( 'return' => true ) );
 	}
 
 	public function tearDown(): void {
@@ -110,15 +110,15 @@ class MaybeAssignNumberTest extends TestCase {
 	private function setup_mocks( bool $feature_on, string $chosen_number, int $user_id = 123 ): void {
 		WP_Mock::userFunction(
 			'get_option',
-			[
-				'return' => static function ( string $key, mixed $default = null ) use ( $feature_on ): mixed {
+			array(
+				'return' => static function ( string $key, mixed $fallback = null ) use ( $feature_on ): mixed {
 					return match ( $key ) {
-						'wmn_assign_on_status'    => [ 'processing' ],
+						'wmn_assign_on_status'    => array( 'processing' ),
 						'wmn_allow_chosen_number' => $feature_on ? 'yes' : 'no',
-						default                   => $default,
+						default                   => $fallback,
 					};
 				},
-			]
+			)
 		);
 
 		$this->order->shouldReceive( 'get_user_id' )->andReturn( $user_id )->byDefault();
@@ -131,7 +131,7 @@ class MaybeAssignNumberTest extends TestCase {
 	 */
 	private function make_record( string $status ): WMN_Member_Number {
 		return new WMN_Member_Number(
-			[
+			array(
 				'id'              => 1,
 				'member_number'   => 'MBR-000001',
 				'user_id'         => 123,
@@ -140,7 +140,7 @@ class MaybeAssignNumberTest extends TestCase {
 				'status'          => $status,
 				'assignment_type' => 'manual',
 				'notes'           => '',
-			]
+			)
 		);
 	}
 

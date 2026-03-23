@@ -5,6 +5,7 @@
     <!-- Files to check -->
     <file>wp-woocommerce-member-number.php</file>
     <file>includes/</file>
+    <file>tests/</file>
 
     <!-- Only check PHP files -->
     <arg name="extensions" value="php"/>
@@ -26,5 +27,94 @@
                 <element value="wmn"/>
             </property>
         </properties>
+    </rule>
+
+    <!--
+        Test-file exclusions.
+
+        PHPUnit test files intentionally differ from WordPress production-code
+        conventions in several ways:
+
+          - PascalCase filenames  (PSR-4 autoloading / PHPUnit standard)
+          - Multiple classes per file  (inline spy/stub fixtures alongside the
+            test case class)
+          - Unused parameters on $wpdb spy stubs  (must match real $wpdb API
+            signatures exactly)
+          - /** @test */ single-line annotations  (PHPUnit annotation style;
+            no prose short-description needed)
+          - Section-marker comments  (// ── Fixtures ── etc.) above setUp /
+            tearDown instead of /** */ docblocks — common in PHPUnit suites
+          - Spy-class properties/methods without full docblocks  (test-only
+            infrastructure; type information is in the declarations)
+          - Empty catch blocks containing only a comment  (expected-redirect
+            pattern used in handler tests)
+          - @package tag not needed in bootstrap / test-case files
+    -->
+
+    <!-- File / class naming — PSR-4 / PHPUnit uses PascalCase. -->
+    <rule ref="WordPress.Files.FileName.NotHyphenatedLowercase">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    <rule ref="WordPress.Files.FileName.InvalidClassFileName">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+
+    <!-- Multiple classes per file is standard for inline test fixtures. -->
+    <rule ref="Generic.Files.OneObjectStructurePerFile">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+
+    <!-- Spy-stub methods must mirror the real $wpdb API, so parameters that
+         are not used in the stub body are unavoidable. -->
+    <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+
+    <!-- @package tag is not meaningful in test bootstrap / test-case files. -->
+    <rule ref="Squiz.Commenting.FileComment.MissingPackageTag">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+
+    <!-- Spy-class properties are typed in the declaration; a separate
+         /** @var … */ docblock adds no value in test fixtures. -->
+    <rule ref="Squiz.Commenting.VariableComment.Missing">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+
+    <!-- Spy-stub methods don't need prose docblocks; their signatures already
+         document the contract. -->
+    <rule ref="Squiz.Commenting.FunctionComment.Missing">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+
+    <!-- Existing partial docblocks (e.g., /** @return … */ without @param)
+         are acceptable in test fixture helpers. -->
+    <rule ref="Squiz.Commenting.FunctionComment.MissingParamTag">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+
+    <!-- /** @test */ is the canonical PHPUnit single-annotation style;
+         no prose short-description is required. -->
+    <rule ref="Generic.Commenting.DocComment.MissingShort">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+
+    <!-- Section-marker // ── … comments above setUp/tearDown are fine. -->
+    <rule ref="Squiz.Commenting.ClassComment.WrongStyle">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    <rule ref="Squiz.Commenting.FunctionComment.WrongStyle">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+
+    <!-- Expected-redirect catch blocks intentionally contain only a comment
+         explaining why the exception is swallowed. -->
+    <rule ref="Generic.CodeAnalysis.EmptyStatement.DetectedCatch">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+
+    <!-- strip_tags() in the test-only sanitize_text_field stub is fine. -->
+    <rule ref="WordPress.WP.AlternativeFunctions">
+        <exclude-pattern>tests/bootstrap.php</exclude-pattern>
     </rule>
 </ruleset>

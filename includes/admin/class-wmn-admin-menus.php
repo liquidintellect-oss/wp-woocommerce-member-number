@@ -65,12 +65,19 @@ class WMN_Admin_Menus {
 		// Handle manual assignment form.
 		$this->handle_manual_assign();
 
+		// Handle edit form save.
+		$this->handle_edit_save();
+
 		require_once WMN_PLUGIN_DIR . 'includes/admin/class-wmn-member-list-table.php';
 		$table = new WMN_Member_List_Table();
 		$table->prepare_items();
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$show_assign_form = ! empty( $_GET['action'] ) && 'manual_assign' === $_GET['action'];
+		$action = sanitize_key( $_GET['action'] ?? '' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$edit_id          = absint( $_GET['wmn_id'] ?? 0 );
+		$show_assign_form = 'manual_assign' === $action;
+		$show_edit_form   = 'edit_member' === $action && $edit_id > 0;
 		?>
 		<div class="wrap">
 			<h1 class="wp-heading-inline">
@@ -102,13 +109,17 @@ class WMN_Admin_Menus {
 
 			<?php if ( $show_assign_form ) : ?>
 				<?php $this->render_manual_assign_form(); ?>
+			<?php elseif ( $show_edit_form ) : ?>
+				<?php $this->render_edit_form( $edit_id ); ?>
 			<?php endif; ?>
 
+			<?php if ( ! $show_edit_form ) : ?>
 			<form method="get">
 				<input type="hidden" name="page" value="wmn-members" />
 				<?php $table->search_box( esc_html__( 'Search', 'wmn' ), 'wmn_search' ); ?>
 				<?php $table->display(); ?>
 			</form>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
@@ -189,11 +200,317 @@ class WMN_Admin_Menus {
 	}
 
 	/**
+	 * Renders the edit form for a single member number record.
+	 *
+	 * @param int $id The record ID to edit.
+	 * @return void
+	 */
+	private function render_edit_form( int $id ): void {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$record = $wpdb->get_row(
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT * FROM {$wpdb->prefix}wmn_member_numbers WHERE id = %d LIMIT 1",
+				$id
+			),
+			ARRAY_A
+		);
+
+		if ( ! $record ) {
+			echo '<div class="notice notice-error"><p>' . esc_html__( 'Record not found.', 'wmn' ) . '</p></div>';
+			return;
+		}
+
+		$nonce   = wp_create_nonce( 'wmn_edit_member_' . $id );
+		$back    = remove_query_arg( array( 'action', 'wmn_id' ) );
+		$entries = WMN_Member_Number_Audit::get_by_record_id( $id );
+		?>
+		<div class="wmn-edit-member-form">
+			<h2>
+				<?php
+				printf(
+					/* translators: %s: member number */
+					esc_html__( 'Edit %s', 'wmn' ),
+					esc_html( wmn_get_label() )
+				);
+				echo ' &mdash; <strong>' . esc_html( $record['member_number'] ) . '</strong>';
+				?>
+			</h2>
+			<form method="post" action="">
+				<input type="hidden" name="wmn_edit_id" value="<?php echo absint( $id ); ?>" />
+				<?php wp_nonce_field( 'wmn_edit_member_' . $id, 'wmn_edit_nonce' ); ?>
+				<table class="form-table">
+					<tr>
+						<th>
+							<label for="wmn_edit_member_number">
+								<?php echo esc_html( wmn_get_label() ); ?>
+							</label>
+						</th>
+						<td>
+							<input
+								type="text"
+								name="wmn_edit_member_number"
+								id="wmn_edit_member_number"
+								value="<?php echo esc_attr( $record['member_number'] ); ?>"
+								class="regular-text"
+							/>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="wmn_edit_status"><?php esc_html_e( 'Status', 'wmn' ); ?></label></th>
+						<td>
+							<select name="wmn_edit_status" id="wmn_edit_status">
+								<?php
+								foreach ( array( 'active', 'suspended', 'revoked' ) as $s ) :
+									?>
+									<option value="<?php echo esc_attr( $s ); ?>"
+										<?php selected( $record['status'], $s ); ?>>
+										<?php echo esc_html( ucfirst( $s ) ); ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="wmn_edit_assignment_type"><?php esc_html_e( 'Assignment Type', 'wmn' ); ?></label></th>
+						<td>
+							<select name="wmn_edit_assignment_type" id="wmn_edit_assignment_type">
+								<?php
+								foreach ( array( 'auto', 'chosen', 'manual' ) as $t ) :
+									?>
+									<option value="<?php echo esc_attr( $t ); ?>"
+										<?php selected( $record['assignment_type'], $t ); ?>>
+										<?php echo esc_html( ucfirst( $t ) ); ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
+							<p class="description">
+								<?php esc_html_e( 'Correct the type if it was set incorrectly by an earlier version of the plugin.', 'wmn' ); ?>
+							</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="wmn_edit_notes"><?php esc_html_e( 'Notes', 'wmn' ); ?></label></th>
+						<td>
+							<textarea
+								name="wmn_edit_notes"
+								id="wmn_edit_notes"
+								rows="4"
+								class="large-text"
+							><?php echo esc_textarea( $record['notes'] ?? '' ); ?></textarea>
+							<p class="description">
+								<?php esc_html_e( 'Internal admin notes about this member number.', 'wmn' ); ?>
+							</p>
+						</td>
+					</tr>
+				</table>
+				<?php
+				submit_button( __( 'Save Changes', 'wmn' ), 'primary', 'wmn_do_edit_save' );
+				?>
+				<a href="<?php echo esc_url( $back ); ?>" class="button"><?php esc_html_e( 'Cancel', 'wmn' ); ?></a>
+			</form>
+
+			<?php if ( $entries ) : ?>
+			<h3><?php esc_html_e( 'Change History', 'wmn' ); ?></h3>
+			<table class="widefat striped" style="margin-top:1em;">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'Date', 'wmn' ); ?></th>
+						<th><?php esc_html_e( 'Admin', 'wmn' ); ?></th>
+						<th><?php esc_html_e( 'Field', 'wmn' ); ?></th>
+						<th><?php esc_html_e( 'From', 'wmn' ); ?></th>
+						<th><?php esc_html_e( 'To', 'wmn' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $entries as $entry ) : ?>
+					<tr>
+						<td><?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $entry->changed_at ) ) ); ?></td>
+						<td>
+							<?php
+							if ( $entry->admin_user_id ) {
+								$admin = get_userdata( $entry->admin_user_id );
+								echo $admin
+									? '<a href="' . esc_url( get_edit_user_link( $admin->ID ) ) . '">' . esc_html( $admin->display_name ) . '</a>'
+									: esc_html( sprintf( '#%d', $entry->admin_user_id ) );
+							} else {
+								echo '<em>' . esc_html__( 'System', 'wmn' ) . '</em>';
+							}
+							?>
+						</td>
+						<td><?php echo esc_html( $entry->field_changed ); ?></td>
+						<td><?php echo esc_html( $entry->old_value ); ?></td>
+						<td><?php echo esc_html( $entry->new_value ); ?></td>
+					</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Handles saving changes from the member number edit form.
+	 *
+	 * @return void
+	 */
+	protected function handle_edit_save(): void {
+		if ( empty( $_POST['wmn_do_edit_save'] ) ) {
+			return;
+		}
+
+		$id = absint( $_POST['wmn_edit_id'] ?? 0 );
+		if ( ! $id ) {
+			return;
+		}
+
+		if ( ! wp_verify_nonce( sanitize_key( $_POST['wmn_edit_nonce'] ?? '' ), 'wmn_edit_member_' . $id ) ) {
+			return;
+		}
+		// phpcs:ignore WordPress.WP.Capabilities.Unknown
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$existing = $wpdb->get_row(
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT * FROM {$wpdb->prefix}wmn_member_numbers WHERE id = %d LIMIT 1",
+				$id
+			),
+			ARRAY_A
+		);
+
+		if ( ! $existing ) {
+			return;
+		}
+
+		$new_number = sanitize_text_field( wp_unslash( $_POST['wmn_edit_member_number'] ?? '' ) );
+		$new_status = sanitize_key( $_POST['wmn_edit_status'] ?? '' );
+		$new_type   = sanitize_key( $_POST['wmn_edit_assignment_type'] ?? '' );
+		$new_notes  = sanitize_textarea_field( wp_unslash( $_POST['wmn_edit_notes'] ?? '' ) );
+
+		// Validate status and type.
+		$valid_statuses = array( 'active', 'suspended', 'revoked' );
+		$valid_types    = array( 'auto', 'chosen', 'manual' );
+		if ( ! in_array( $new_status, $valid_statuses, true ) ) {
+			$new_status = $existing['status'];
+		}
+		if ( ! in_array( $new_type, $valid_types, true ) ) {
+			$new_type = $existing['assignment_type'];
+		}
+
+		// Uniqueness check if number changed.
+		if ( $new_number !== $existing['member_number'] ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$conflict = $wpdb->get_var(
+				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"SELECT id FROM {$wpdb->prefix}wmn_member_numbers WHERE member_number = %s AND id != %d LIMIT 1",
+					$new_number,
+					$id
+				)
+			);
+			if ( $conflict ) {
+				$this->redirect_and_exit(
+					add_query_arg(
+						'wmn_message',
+						rawurlencode(
+							sprintf(
+								/* translators: %s: member number */
+								__( 'Number %s is already assigned to another record.', 'wmn' ),
+								$new_number
+							)
+						),
+						add_query_arg(
+							array(
+								'action' => 'edit_member',
+								'wmn_id' => $id,
+							),
+							admin_url( 'admin.php?page=wmn-members' )
+						)
+					)
+				);
+			}
+		}
+
+		// Build update data and collect changes for audit.
+		$update_data   = array();
+		$update_format = array();
+		$changes       = array();
+
+		if ( $new_number !== $existing['member_number'] ) {
+			$update_data['member_number'] = $new_number;
+			$update_format[]              = '%s';
+			$changes['member_number']     = array( $existing['member_number'], $new_number );
+		}
+		if ( $new_status !== $existing['status'] ) {
+			$update_data['status'] = $new_status;
+			$update_format[]       = '%s';
+			$changes['status']     = array( $existing['status'], $new_status );
+		}
+		if ( $new_type !== $existing['assignment_type'] ) {
+			$update_data['assignment_type'] = $new_type;
+			$update_format[]                = '%s';
+			$changes['assignment_type']     = array( $existing['assignment_type'], $new_type );
+		}
+		if ( ( $existing['notes'] ?? '' ) !== $new_notes ) {
+			$update_data['notes'] = $new_notes;
+			$update_format[]      = '%s';
+			$changes['notes']     = array( (string) ( $existing['notes'] ?? '' ), $new_notes );
+		}
+
+		if ( ! empty( $update_data ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->update(
+				$wpdb->prefix . 'wmn_member_numbers',
+				$update_data,
+				array( 'id' => $id ),
+				$update_format,
+				array( '%d' )
+			);
+
+			// Log each changed field.
+			foreach ( $changes as $field => list( $old, $new ) ) {
+				WMN_Member_Number_Audit::log( $id, $field, $old, $new );
+			}
+
+			// If member_number changed, sync user meta.
+			if ( isset( $changes['member_number'] ) && ! empty( $existing['user_id'] ) ) {
+				update_user_meta( (int) $existing['user_id'], '_wmn_member_number', $new_number );
+			}
+			if ( isset( $changes['assignment_type'] ) && ! empty( $existing['user_id'] ) ) {
+				update_user_meta( (int) $existing['user_id'], '_wmn_assignment_type', $new_type );
+			}
+		}
+
+		$this->redirect_and_exit(
+			add_query_arg(
+				'wmn_message',
+				rawurlencode( __( 'Changes saved.', 'wmn' ) ),
+				add_query_arg(
+					array(
+						'action' => 'edit_member',
+						'wmn_id' => $id,
+					),
+					admin_url( 'admin.php?page=wmn-members' )
+				)
+			)
+		);
+	}
+
+	/**
 	 * Handles single-row status-change actions (suspend/reactivate/revoke).
 	 *
 	 * @return void
 	 */
-	private function handle_row_actions(): void {
+	protected function handle_row_actions(): void {
 		if ( empty( $_GET['wmn_action'] ) || empty( $_GET['wmn_nonce'] ) ) {
 			return;
 		}
@@ -218,6 +535,15 @@ class WMN_Admin_Menus {
 		);
 
 		if ( isset( $map[ $action ] ) && $id ) {
+			// Fetch the current status for the audit log.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$old_status = (string) $wpdb->get_var(
+				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"SELECT status FROM {$wpdb->prefix}wmn_member_numbers WHERE id = %d LIMIT 1",
+					$id
+				)
+			);
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
 				$wpdb->prefix . 'wmn_member_numbers',
@@ -226,7 +552,8 @@ class WMN_Admin_Menus {
 				array( '%s' ),
 				array( '%d' )
 			);
-			wp_safe_redirect(
+			WMN_Member_Number_Audit::log( $id, 'status', $old_status, $map[ $action ] );
+			$this->redirect_and_exit(
 				add_query_arg(
 					'wmn_message',
 					rawurlencode(
@@ -239,7 +566,6 @@ class WMN_Admin_Menus {
 					remove_query_arg( array( 'wmn_action', 'wmn_nonce', 'wmn_id' ) )
 				)
 			);
-			exit;
 		}
 	}
 
@@ -248,7 +574,7 @@ class WMN_Admin_Menus {
 	 *
 	 * @return void
 	 */
-	private function handle_bulk_actions(): void {
+	protected function handle_bulk_actions(): void {
 		if ( empty( $_POST['wmn_bulk_action'] ) || empty( $_POST['wmn_bulk_nonce'] ) ) {
 			return;
 		}
@@ -275,16 +601,33 @@ class WMN_Admin_Menus {
 		);
 
 		if ( isset( $map[ $action ] ) ) {
+			$new_status = $map[ $action ];
+
+			// Fetch old statuses for audit before updating.
 			$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$old_rows = $wpdb->get_results(
+				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+					"SELECT id, status FROM {$wpdb->prefix}wmn_member_numbers WHERE id IN ($placeholders)",
+					$ids
+				),
+				ARRAY_A
+			);
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->query(
 				$wpdb->prepare(
 					// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					"UPDATE {$wpdb->prefix}wmn_member_numbers SET status = %s WHERE id IN ($placeholders)",
-					array_merge( array( $map[ $action ] ), $ids )
+					array_merge( array( $new_status ), $ids )
 				)
 			);
-			wp_safe_redirect(
+			foreach ( $old_rows as $row ) {
+				if ( $row['status'] !== $new_status ) {
+					WMN_Member_Number_Audit::log( (int) $row['id'], 'status', $row['status'], $new_status );
+				}
+			}
+			$this->redirect_and_exit(
 				add_query_arg(
 					'wmn_message',
 					rawurlencode(
@@ -297,7 +640,6 @@ class WMN_Admin_Menus {
 					remove_query_arg( array( 'wmn_bulk_action', 'wmn_bulk_nonce', 'wmn_ids' ) )
 				)
 			);
-			exit;
 		}
 	}
 
@@ -306,7 +648,7 @@ class WMN_Admin_Menus {
 	 *
 	 * @return void
 	 */
-	private function handle_manual_assign(): void {
+	protected function handle_manual_assign(): void {
 		if ( empty( $_POST['wmn_do_manual_assign'] ) ) {
 			return;
 		}
@@ -361,7 +703,7 @@ class WMN_Admin_Menus {
 				)
 			);
 			if ( $exists ) {
-				wp_safe_redirect(
+				$this->redirect_and_exit(
 					add_query_arg(
 						'wmn_message',
 						rawurlencode(
@@ -373,7 +715,6 @@ class WMN_Admin_Menus {
 						)
 					)
 				);
-				exit;
 			}
 		}
 
@@ -390,12 +731,17 @@ class WMN_Admin_Menus {
 			array( '%s', '%d', '%d', '%s', '%s' )
 		);
 
+		$new_id = (int) $wpdb->insert_id;
+		if ( $new_id ) {
+			WMN_Member_Number_Audit::log( $new_id, 'created', '', $number );
+		}
+
 		if ( $user_id ) {
 			update_user_meta( $user_id, '_wmn_member_number', $number );
 			update_user_meta( $user_id, '_wmn_member_number_order_id', $order_id );
 		}
 
-		wp_safe_redirect(
+		$this->redirect_and_exit(
 			add_query_arg(
 				'wmn_message',
 				rawurlencode(
@@ -409,6 +755,19 @@ class WMN_Admin_Menus {
 				remove_query_arg( 'action' )
 			)
 		);
+	}
+
+	/**
+	 * Redirects to the given URL and terminates the request.
+	 *
+	 * Extracted as a protected method so test doubles can override it without
+	 * actually calling exit.
+	 *
+	 * @param string $url The URL to redirect to.
+	 * @return void
+	 */
+	protected function redirect_and_exit( string $url ): void {
+		wp_safe_redirect( $url );
 		exit;
 	}
 }

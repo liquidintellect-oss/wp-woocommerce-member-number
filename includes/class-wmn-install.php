@@ -60,6 +60,20 @@ CREATE TABLE {$wpdb->prefix}wmn_reserved_numbers (
   UNIQUE KEY member_number (member_number),
   KEY expires_at (expires_at)
 ) {$collate};
+
+CREATE TABLE {$wpdb->prefix}wmn_member_number_audit (
+  id               bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  member_number_id bigint(20) unsigned NOT NULL,
+  admin_user_id    bigint(20) unsigned NULL,
+  changed_at       datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  field_changed    varchar(64)         NOT NULL,
+  old_value        text                NULL,
+  new_value        text                NULL,
+  PRIMARY KEY  (id),
+  KEY member_number_id (member_number_id),
+  KEY admin_user_id (admin_user_id),
+  KEY changed_at (changed_at)
+) {$collate};
 ";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';

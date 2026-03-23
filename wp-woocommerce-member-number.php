@@ -72,6 +72,7 @@ add_action(
 		require_once WMN_PLUGIN_DIR . 'includes/functions.php';
 		require_once WMN_PLUGIN_DIR . 'includes/class-wmn-install.php';
 		require_once WMN_PLUGIN_DIR . 'includes/class-wmn-member-number.php';
+		require_once WMN_PLUGIN_DIR . 'includes/class-wmn-member-number-audit.php';
 		require_once WMN_PLUGIN_DIR . 'includes/class-wmn-number-formatter.php';
 		require_once WMN_PLUGIN_DIR . 'includes/class-wmn-member-number-manager.php';
 		require_once WMN_PLUGIN_DIR . 'includes/class-wmn-chosen-number.php';

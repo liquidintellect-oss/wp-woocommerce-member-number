@@ -19,12 +19,12 @@ use WP_Mock\Tools\TestCase;
  */
 class TrackingWpdb {
 
-	public string  $prefix        = 'wp_';
-	public bool    $insert_called = false;
-	public bool    $update_called = false;
-	public ?array  $insert_data   = null;
-	public ?array  $update_data   = null;
-	public ?array  $update_where  = null;
+	public string $prefix       = 'wp_';
+	public bool $insert_called  = false;
+	public bool $update_called  = false;
+	public ?array $insert_data  = null;
+	public ?array $update_data  = null;
+	public ?array $update_where = null;
 
 	public function insert( string $table, array $data, ?array $format = null ): int {
 		$this->insert_called = true;
@@ -87,7 +87,7 @@ class TestableAssignChosenManager extends WMN_Member_Number_Manager {
 class AssignChosenNumberTest extends TestCase {
 
 	private TestableAssignChosenManager $manager;
-	private TrackingWpdb                $wpdb;
+	private TrackingWpdb $wpdb;
 
 	/** @var \Mockery\MockInterface&WC_Order */
 	private \Mockery\MockInterface $order;
@@ -102,8 +102,8 @@ class AssignChosenNumberTest extends TestCase {
 		WP_Mock::userFunction( 'add_filter' );
 
 		// Install the tracking wpdb as the global.
-		$this->wpdb          = new TrackingWpdb();
-		$GLOBALS['wpdb']     = $this->wpdb;
+		$this->wpdb      = new TrackingWpdb();
+		$GLOBALS['wpdb'] = $this->wpdb;
 
 		$this->manager = new TestableAssignChosenManager();
 
@@ -116,8 +116,8 @@ class AssignChosenNumberTest extends TestCase {
 		// WP functions consumed by assign_chosen_number() and validate_chosen().
 		WP_Mock::userFunction(
 			'get_option',
-			[
-				'return' => static function ( string $key, mixed $default = null ): mixed {
+			array(
+				'return' => static function ( string $key, mixed $fallback = null ): mixed {
 					return match ( $key ) {
 						'wmn_number_format_template' => '{PREFIX}{SEQ}',
 						'wmn_number_prefix'          => 'MBR-',
@@ -125,13 +125,13 @@ class AssignChosenNumberTest extends TestCase {
 						'wmn_number_min_value'       => 1,
 						'wmn_number_max_value'       => 999999,
 						'wmn_number_label'           => 'Member Number',
-						default                      => $default,
+						default                      => $fallback,
 					};
 				},
-			]
+			)
 		);
 
-		WP_Mock::userFunction( 'is_wp_error', [ 'return' => false ] );
+		WP_Mock::userFunction( 'is_wp_error', array( 'return' => false ) );
 		WP_Mock::userFunction( 'do_action' );
 	}
 
@@ -144,7 +144,7 @@ class AssignChosenNumberTest extends TestCase {
 
 	private function make_existing_record( int $id = 5 ): WMN_Member_Number {
 		return new WMN_Member_Number(
-			[
+			array(
 				'id'              => $id,
 				'member_number'   => 'MBR-000001',
 				'user_id'         => 123,
@@ -153,7 +153,7 @@ class AssignChosenNumberTest extends TestCase {
 				'status'          => 'active',
 				'assignment_type' => 'manual',
 				'notes'           => '',
-			]
+			)
 		);
 	}
 
@@ -183,7 +183,7 @@ class AssignChosenNumberTest extends TestCase {
 		$this->assertTrue( $this->wpdb->update_called, 'Expected $wpdb->update() to be called' );
 
 		// The WHERE clause must target the existing record by its primary key.
-		$this->assertSame( [ 'id' => 5 ], $this->wpdb->update_where );
+		$this->assertSame( array( 'id' => 5 ), $this->wpdb->update_where );
 
 		// The updated row must carry the new number, correct type, and active status.
 		$this->assertSame( 'MBR-000042', $this->wpdb->update_data['member_number'] );
