@@ -119,6 +119,22 @@ class AdminUserProfileSaveTest extends TestCase {
 		WP_Mock::userFunction( 'get_current_user_id', array( 'return' => 1 ) );
 		WP_Mock::userFunction( 'update_user_meta' );
 		WP_Mock::userFunction( 'delete_user_meta' );
+		// get_option is called by wmn_get_formatter() which is now used to normalise input.
+		WP_Mock::userFunction(
+			'get_option',
+			array(
+				'return' => static function ( string $option, mixed $fallback = false ): mixed {
+					$map = array(
+						'wmn_number_format_template' => '{PREFIX}{SEQ}',
+						'wmn_number_prefix'          => 'MBR-',
+						'wmn_number_pad_length'      => 6,
+						'wmn_number_min_value'       => 1,
+						'wmn_number_max_value'       => 999999,
+					);
+					return $map[ $option ] ?? $fallback;
+				},
+			)
+		);
 	}
 
 	public function tearDown(): void {

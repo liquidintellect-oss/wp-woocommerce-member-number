@@ -179,7 +179,16 @@ class WMN_Admin_Menus {
 							?>
 							</label>
 						</th>
-						<td><input type="text" name="wmn_manual_number" id="wmn_manual_number" class="regular-text" /></td>
+						<td>
+							<input
+								type="text"
+								name="wmn_manual_number"
+								id="wmn_manual_number"
+								class="regular-text"
+								inputmode="numeric"
+								data-wmn-number-field="1"
+							/>
+						</td>
 					</tr>
 				</table>
 				<?php
@@ -223,9 +232,20 @@ class WMN_Admin_Menus {
 			return;
 		}
 
-		$nonce   = wp_create_nonce( 'wmn_edit_member_' . $id );
-		$back    = remove_query_arg( array( 'action', 'wmn_id' ) );
-		$entries = WMN_Member_Number_Audit::get_by_record_id( $id );
+		$nonce     = wp_create_nonce( 'wmn_edit_member_' . $id );
+		$back      = remove_query_arg( array( 'action', 'wmn_id' ) );
+		$entries   = WMN_Member_Number_Audit::get_by_record_id( $id );
+		$formatter = wmn_get_formatter();
+		$has_seq   = false !== strpos( $formatter->get_template(), '{SEQ}' );
+
+		// When the template uses {SEQ}, pre-populate with just the sequence digits.
+		$edit_field_value = $record['member_number'];
+		if ( $has_seq && '' !== $edit_field_value ) {
+			$seq = $formatter->extract_sequence( $edit_field_value );
+			if ( null !== $seq ) {
+				$edit_field_value = (string) $seq;
+			}
+		}
 		?>
 		<div class="wmn-edit-member-form">
 			<h2>
@@ -253,8 +273,12 @@ class WMN_Admin_Menus {
 								type="text"
 								name="wmn_edit_member_number"
 								id="wmn_edit_member_number"
-								value="<?php echo esc_attr( $record['member_number'] ); ?>"
+								value="<?php echo esc_attr( $edit_field_value ); ?>"
 								class="regular-text"
+								<?php if ( $has_seq ) : ?>
+								inputmode="numeric"
+								data-wmn-number-field="1"
+								<?php endif; ?>
 							/>
 						</td>
 					</tr>
@@ -392,6 +416,12 @@ class WMN_Admin_Menus {
 		}
 
 		$new_number = sanitize_text_field( wp_unslash( $_POST['wmn_edit_member_number'] ?? '' ) );
+
+		// Normalize: if the admin typed only digits (sequence), apply the full mask.
+		if ( '' !== $new_number ) {
+			$new_number = wmn_get_formatter()->normalize_input( $new_number );
+		}
+
 		$new_status = sanitize_key( $_POST['wmn_edit_status'] ?? '' );
 		$new_type   = sanitize_key( $_POST['wmn_edit_assignment_type'] ?? '' );
 		$new_notes  = sanitize_textarea_field( wp_unslash( $_POST['wmn_edit_notes'] ?? '' ) );

@@ -41,6 +41,73 @@
 		updatePreview
 	);
 
+	// ── Member number mask ───────────────────────────────────────────────────
+
+	/**
+	 * Format a sequence integer into a full member number string using the
+	 * configured prefix and zero-pad length (mirrors PHP WMN_Number_Formatter).
+	 *
+	 * @param {string} digits Raw digit string entered by the admin.
+	 * @return {string} Fully formatted member number, or empty string.
+	 */
+	function formatMemberNumber( digits ) {
+		if ( ! digits ) return '';
+		var n = parseInt( digits, 10 );
+		if ( isNaN( n ) ) return '';
+		var padLength = parseInt( wmnAdmin.numberPadLength, 10 ) || 6;
+		var seq = String( n );
+		while ( seq.length < padLength ) {
+			seq = '0' + seq;
+		}
+		return ( wmnAdmin.numberPrefix || '' ) + seq;
+	}
+
+	/**
+	 * Attach digit-only restriction and live mask preview to a member number input.
+	 *
+	 * @param {jQuery} $input The input element to initialise.
+	 */
+	function initNumberField( $input ) {
+		if ( $input.data( 'wmn-mask-init' ) ) return;
+		$input.data( 'wmn-mask-init', true );
+
+		// Insert the preview element after the input (if not already present).
+		var previewId = $input.attr( 'id' ) + '_preview';
+		if ( ! $( '#' + previewId ).length ) {
+			$input.after(
+				'<p id="' + previewId + '" class="wmn-number-preview description" style="margin-top:4px;"></p>'
+			);
+		}
+		var $preview = $( '#' + previewId );
+
+		function updateMask() {
+			var val = $input.val().replace( /\D/g, '' );
+			if ( val !== $input.val() ) {
+				$input.val( val );
+			}
+			if ( val === '' ) {
+				$preview.text( '' );
+			} else {
+				$preview.text( formatMemberNumber( val ) );
+			}
+		}
+
+		$input.on( 'input keydown paste', function () {
+			setTimeout( updateMask, 0 );
+		} );
+
+		// Run once on init to handle pre-populated values.
+		updateMask();
+	}
+
+	// Initialise all number fields present on page load.
+	$( function () {
+		if ( ! wmnAdmin.hasSeq ) return;
+		$( '[data-wmn-number-field]' ).each( function () {
+			initNumberField( $( this ) );
+		} );
+	} );
+
 	// ── Customer search select2 ──────────────────────────────────────────────
 
 	$( function () {

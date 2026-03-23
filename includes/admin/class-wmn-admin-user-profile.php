@@ -34,10 +34,22 @@ class WMN_Admin_User_Profile {
 			return;
 		}
 
-		$record  = WMN_Member_Number::get_by_user( $user->ID );
-		$number  = $record ? $record->member_number : '';
-		$nonce   = wp_create_nonce( 'wmn_user_profile_' . $user->ID );
-		$entries = $record ? WMN_Member_Number_Audit::get_by_record_id( $record->id ) : array();
+		$record    = WMN_Member_Number::get_by_user( $user->ID );
+		$number    = $record ? $record->member_number : '';
+		$nonce     = wp_create_nonce( 'wmn_user_profile_' . $user->ID );
+		$entries   = $record ? WMN_Member_Number_Audit::get_by_record_id( $record->id ) : array();
+		$formatter = wmn_get_formatter();
+		$has_seq   = false !== strpos( $formatter->get_template(), '{SEQ}' );
+
+		// When the template uses {SEQ}, show the sequence number in the field so
+		// the admin only needs to type digits; the full formatted number is the mask.
+		$field_value = $number;
+		if ( $has_seq && '' !== $number ) {
+			$seq = $formatter->extract_sequence( $number );
+			if ( null !== $seq ) {
+				$field_value = (string) $seq;
+			}
+		}
 		?>
 		<h2><?php echo esc_html( wmn_get_label() ); ?></h2>
 		<table class="form-table" id="wmn-user-profile-section">
@@ -52,8 +64,12 @@ class WMN_Admin_User_Profile {
 						type="text"
 						name="wmn_member_number_edit"
 						id="wmn_member_number_edit"
-						value="<?php echo esc_attr( $number ); ?>"
+						value="<?php echo esc_attr( $field_value ); ?>"
 						class="regular-text"
+						<?php if ( $has_seq ) : ?>
+						inputmode="numeric"
+						data-wmn-number-field="1"
+						<?php endif; ?>
 					/>
 					<input type="hidden" name="wmn_user_profile_nonce" value="<?php echo esc_attr( $nonce ); ?>" />
 					<?php if ( $record ) : ?>
@@ -172,6 +188,12 @@ class WMN_Admin_User_Profile {
 		}
 
 		$new_number = sanitize_text_field( wp_unslash( $_POST['wmn_member_number_edit'] ?? '' ) );
+
+		// Normalize: if the admin typed only digits (sequence), apply the full mask.
+		if ( '' !== $new_number ) {
+			$new_number = wmn_get_formatter()->normalize_input( $new_number );
+		}
+
 		$existing   = WMN_Member_Number::get_by_user( $user_id );
 		$old_number = $existing ? $existing->member_number : '';
 
