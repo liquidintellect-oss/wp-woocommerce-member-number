@@ -51,6 +51,7 @@ class WMN_Admin {
 			true
 		);
 
+		$formatter = wmn_get_formatter();
 		wp_localize_script(
 			'wmn-admin',
 			'wmnAdmin',
@@ -62,6 +63,10 @@ class WMN_Admin {
 				'labelPlural'          => wmn_get_label( true ),
 				'confirmSuspend'       => __( 'Suspend selected numbers?', 'wmn' ),
 				'confirmRevoke'        => __( 'Permanently revoke selected numbers? This cannot be undone.', 'wmn' ),
+				'numberPrefix'         => $formatter->get_prefix(),
+				'numberPadLength'      => $formatter->get_pad_length(),
+				'hasSeq'               => false !== strpos( $formatter->get_template(), '{SEQ}' ),
+				'numberExample'        => $formatter->generate( max( 1, $formatter->get_min_value() ) ),
 			)
 		);
 	}
