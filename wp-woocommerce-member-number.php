@@ -76,6 +76,7 @@ add_action(
 		require_once WMN_PLUGIN_DIR . 'includes/class-wmn-number-formatter.php';
 		require_once WMN_PLUGIN_DIR . 'includes/class-wmn-member-number-manager.php';
 		require_once WMN_PLUGIN_DIR . 'includes/class-wmn-chosen-number.php';
+		require_once WMN_PLUGIN_DIR . 'includes/class-wmn-invoice-display.php';
 		require_once WMN_PLUGIN_DIR . 'includes/class-wmn-plugin.php';
 
 		WMN_Install::check_version();
