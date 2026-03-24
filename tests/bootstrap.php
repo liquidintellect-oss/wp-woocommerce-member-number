@@ -120,6 +120,13 @@ if ( ! class_exists( 'WC_Order' ) ) {
 	class WC_Order {} // phpcs:ignore
 }
 
+if ( ! class_exists( 'WC_Email' ) ) {
+	class WC_Email { // phpcs:ignore
+		/** @var string */
+		public string $id = '';
+	}
+}
+
 if ( ! class_exists( 'WC_Order_Item_Fee' ) ) {
 	class WC_Order_Item_Fee { // phpcs:ignore
 		public function set_name( string $name ): void {}
@@ -136,6 +143,7 @@ require_once $_includes . 'class-wmn-member-number.php';
 require_once $_includes . 'class-wmn-member-number-audit.php';
 require_once $_includes . 'functions.php';
 require_once $_includes . 'class-wmn-member-number-manager.php';
+require_once $_includes . 'class-wmn-invoice-display.php';
 require_once $_includes . 'admin/class-wmn-admin-menus.php';
 require_once $_includes . 'admin/class-wmn-admin-user-profile.php';
 

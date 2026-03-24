@@ -34,6 +34,13 @@ final class WMN_Plugin {
 	public WMN_Chosen_Number $chosen;
 
 	/**
+	 * The invoice/packing-slip display component.
+	 *
+	 * @var WMN_Invoice_Display
+	 */
+	public WMN_Invoice_Display $invoice_display;
+
+	/**
 	 * Returns (or creates) the singleton instance.
 	 *
 	 * @return self
@@ -49,8 +56,9 @@ final class WMN_Plugin {
 	 * Constructor — registers all hooks and initialises components.
 	 */
 	private function __construct() {
-		$this->manager = new WMN_Member_Number_Manager();
-		$this->chosen  = new WMN_Chosen_Number();
+		$this->manager         = new WMN_Member_Number_Manager();
+		$this->chosen          = new WMN_Chosen_Number();
+		$this->invoice_display = new WMN_Invoice_Display();
 
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_filter( 'woocommerce_email_classes', array( $this, 'register_emails' ) );
